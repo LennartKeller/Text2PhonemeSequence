@@ -1,7 +1,9 @@
-from transformers import T5ForConditionalGeneration, AutoTokenizer
-from segments import Tokenizer
 import os
+
+from segments import Tokenizer
 from tqdm import tqdm
+from transformers import AutoTokenizer, T5ForConditionalGeneration
+
 
 class Text2PhonemeSequence:
     def __init__(self, pretrained_g2p_model='charsiu/g2p_multilingual_byT5_small_100', tokenizer= 'google/byt5-small', language='vie-c', is_cuda=True):
@@ -112,7 +114,12 @@ class Text2PhonemeSequence:
                     self.phoneme_length[self.language + '.tsv'] = 50
                 preds = self.model.generate(**out, num_beams=1, max_length=self.phoneme_length[self.language + '.tsv'])
                 phones = self.tokenizer.batch_decode(preds.tolist(),skip_special_tokens=True)
-                list_phones.append(phones[0])
+                if phones[0]:
+                    list_phones.append(phones[0])
+                else:
+                    # Unrecognized words are most likely punctuation mark!
+                    list_phones.append(list_words[i])
+
         for i in range(len(list_phones)):
             try:
                 segmented_phone = self.segment_tool(list_phones[i], ipa=True)
